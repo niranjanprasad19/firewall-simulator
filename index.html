@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firewall Management Console</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-content">
+            <div class="title-section">
+                <div>
+                    <h1>Firewall Management Console</h1>
+                    <p class="subtitle">Version 2.4.1 | Last Updated: Oct 28, 2025 15:00 IST</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button id="startBtn" class="btn btn-primary">Start</button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>Stop</button>
+                <button id="resetBtn" class="btn btn-outline">Reset</button>
+                <button id="clearLogBtn" class="btn btn-outline">Clear Logs</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">Status:</span>
+                <span id="simStatus" class="value stopped">Stopped</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Runtime:</span>
+                <span id="runtime" class="value">00:00</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Speed:</span>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1">
+                <span id="speedValue" class="value">1.0x</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Threat Level:</span>
+                <span id="threatLevel" class="value threat-low">Low</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Firewall Rules Panel -->
+        <section class="rules-panel">
+            <div class="panel-header">
+                <h2>Active Firewall Rules (ACL)</h2>
+                <span id="ruleCount" class="badge">7 Rules</span>
+            </div>
+            <div class="panel-controls">
+                <button id="addRuleBtn" class="btn btn-small btn-primary">Add New Rule</button>
+            </div>
+            <div id="rulesList" class="rules-list"></div>
+        </section>
+
+        <!-- Packet Flow Visualization -->
+        <section class="visualization-panel">
+            <div class="panel-header">
+                <h2>Live Packet Processing</h2>
+            </div>
+            <div class="packet-flow">
+                <div class="flow-source">
+                    <div class="endpoint">
+                        <svg width="60" height="60" viewBox="0 0 60 60">
+                            <rect x="5" y="15" width="50" height="30" rx="5" fill="#ffffff" stroke="#2c3e50" stroke-width="2"/>
+                            <circle cx="15" cy="30" r="3" fill="#2c3e50"/>
+                            <circle cx="25" cy="30" r="3" fill="#2c3e50"/>
+                            <circle cx="35" cy="30" r="3" fill="#2c3e50"/>
+                            <circle cx="45" cy="30" r="3" fill="#2c3e50"/>
+                        </svg>
+                        <span>SOURCE</span>
+                    </div>
+                    <div id="packetSource" class="packet-container"></div>
+                </div>
+
+                <div class="flow-firewall">
+                    <div class="firewall-icon">
+                        <svg width="80" height="80" viewBox="0 0 80 80">
+                            <!-- Brick wall -->
+                            <rect x="10" y="15" width="60" height="50" fill="#ffffff" stroke="#2c3e50" stroke-width="2"/>
+                            <line x1="10" y1="25" x2="70" y2="25" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="10" y1="35" x2="70" y2="35" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="10" y1="45" x2="70" y2="45" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="10" y1="55" x2="70" y2="55" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="25" y1="15" x2="25" y2="25" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="40" y1="25" x2="40" y2="35" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="55" y1="35" x2="55" y2="45" stroke="#2c3e50" stroke-width="1"/>
+                            <line x1="25" y1="45" x2="25" y2="55" stroke="#2c3e50" stroke-width="1"/>
+                            <!-- Shield icon -->
+                            <path d="M35 8 L40 8 L43 10 L43 16 Q43 20 40 22 Q37 20 33 16 L33 10 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+                        </svg>
+                        <span>FIREWALL</span>
+                    </div>
+                    <div id="packetAnimation" class="packet-animation-area"></div>
+                </div>
+
+                <div class="flow-destination">
+                    <div class="endpoint">
+                        <svg width="60" height="60" viewBox="0 0 60 60">
+                            <rect x="5" y="15" width="50" height="30" rx="5" fill="#ffffff" stroke="#27ae60" stroke-width="2"/>
+                            <rect x="15" y="20" width="30" height="20" fill="#27ae60" opacity="0.1"/>
+                            <line x1="20" y1="25" x2="40" y2="25" stroke="#27ae60" stroke-width="2"/>
+                            <line x1="20" y1="30" x2="40" y2="30" stroke="#27ae60" stroke-width="2"/>
+                            <line x1="20" y1="35" x2="40" y2="35" stroke="#27ae60" stroke-width="2"/>
+                        </svg>
+                        <span>DESTINATION</span>
+                    </div>
+                    <div id="packetDestination" class="packet-container"></div>
+                </div>
+            </div>
+
+            <!-- Current Packet Details -->
+            <div class="current-packet">
+                <h3>Current Packet Processing</h3>
+                <div id="currentPacketDetails" class="packet-details">
+                    <p class="waiting">Waiting for packets...</p>
+                </div>
+            </div>
+
+            <!-- Packet Queue -->
+            <div class="packet-queue">
+                <h3>Packet Queue (Next 5)</h3>
+                <div id="packetQueue" class="queue-list">
+                    <p class="waiting">No packets in queue</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Dashboard -->
+        <section class="stats-panel">
+            <div class="panel-header">
+                <h2>Firewall Statistics</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Packets</div>
+                    <div id="totalPackets" class="stat-value">0</div>
+                </div>
+                <div class="stat-card stat-allowed">
+                    <div class="stat-label">Allowed</div>
+                    <div id="allowedPackets" class="stat-value">0</div>
+                    <div class="stat-percentage" id="allowedPercent">0%</div>
+                    <div class="progress-bar">
+                        <div id="allowedProgress" class="progress-fill allowed"></div>
+                    </div>
+                </div>
+                <div class="stat-card stat-dropped">
+                    <div class="stat-label">Dropped</div>
+                    <div id="droppedPackets" class="stat-value">0</div>
+                    <div class="stat-percentage" id="droppedPercent">0%</div>
+                    <div class="progress-bar">
+                        <div id="droppedProgress" class="progress-fill dropped"></div>
+                    </div>
+                </div>
+                <div class="stat-card stat-rejected">
+                    <div class="stat-label">Rejected</div>
+                    <div id="rejectedPackets" class="stat-value">0</div>
+                    <div class="stat-percentage" id="rejectedPercent">0%</div>
+                    <div class="progress-bar">
+                        <div id="rejectedProgress" class="progress-fill rejected"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="protocol-stats">
+                <h3>Protocol Distribution</h3>
+                <div class="protocol-item">
+                    <span class="protocol-label">TCP</span>
+                    <div class="protocol-bar">
+                        <div id="tcpBar" class="protocol-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="tcpCount" class="protocol-count">0</span>
+                </div>
+                <div class="protocol-item">
+                    <span class="protocol-label">UDP</span>
+                    <div class="protocol-bar">
+                        <div id="udpBar" class="protocol-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="udpCount" class="protocol-count">0</span>
+                </div>
+                <div class="protocol-item">
+                    <span class="protocol-label">ICMP</span>
+                    <div class="protocol-bar">
+                        <div id="icmpBar" class="protocol-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="icmpCount" class="protocol-count">0</span>
+                </div>
+            </div>
+
+            <div class="top-lists">
+                <div class="top-blocked">
+                    <h3>Top Blocked Sources</h3>
+                    <div id="topBlocked" class="top-list"></div>
+                </div>
+                <div class="top-allowed">
+                    <h3>Top Allowed Destinations</h3>
+                    <div id="topAllowed" class="top-list"></div>
+                </div>
+            </div>
+
+            <div class="performance-stats">
+                <div class="perf-item">
+                    <span class="perf-label">Avg Processing Time</span>
+                    <span id="avgProcessing" class="perf-value">0ms</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-label">Packets/Second</span>
+                    <span id="packetsPerSec" class="perf-value">0</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Activity Log Section -->
+    <section class="log-section">
+        <div class="log-header">
+            <h2>Firewall Activity Log</h2>
+            <button id="exportLogBtn" class="btn btn-small btn-outline">Export Log (CSV)</button>
+        </div>
+        <div id="activityLog" class="activity-log"></div>
+    </section>
+
+    <!-- Add Rule Modal -->
+    <div id="addRuleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Firewall Rule</h2>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <form id="ruleForm" class="rule-form">
+                <div class="form-group">
+                    <label class="form-label">Action</label>
+                    <select id="ruleAction" class="form-control" required>
+                        <option value="ALLOW">ALLOW</option>
+                        <option value="DROP">DROP</option>
+                        <option value="REJECT">REJECT</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Source IP (support CIDR, e.g., 192.168.1.0/24 or *)</label>
+                    <input type="text" id="ruleSourceIP" class="form-control" placeholder="192.168.1.0/24" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Destination IP (or *)</label>
+                    <input type="text" id="ruleDestIP" class="form-control" placeholder="0.0.0.0/0 or *" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Protocol</label>
+                    <select id="ruleProtocol" class="form-control" required>
+                        <option value="*">ANY</option>
+                        <option value="TCP">TCP</option>
+                        <option value="UDP">UDP</option>
+                        <option value="ICMP">ICMP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Destination Port (or *)</label>
+                    <input type="text" id="ruleDestPort" class="form-control" placeholder="80 or *" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="ruleDescription" class="form-control" rows="3" placeholder="Rule description" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelRuleBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
